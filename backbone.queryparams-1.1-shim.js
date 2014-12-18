@@ -27,10 +27,9 @@
 		if (!Backbone.History.started) return false;
 		if (!options || options === true) options = { trigger: !!options };
 
-		var url = this.root + (fragment = this.getFragment(fragment || '')),
-			hashMatch = fragment.match(hashStripper),
+		var hashMatch = fragment.match(hashStripper),
 			hash = hashMatch ? hashMatch[0] : '',
-			strippedFragment = fragment.replace(hashStripper, ''),
+			url = this.root + (fragment = this.getFragment(fragment || '')),
 			fragmentChanged = true;
 
 		// Modified from the upstream impl:
