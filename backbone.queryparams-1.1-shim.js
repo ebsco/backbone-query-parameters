@@ -20,45 +20,58 @@
 	}
 }(this, function (_, Backbone) {
 
+	var hashStripper = /#.*/;
+
 	Backbone.History.prototype.navigate = function (fragment, options) {
 		/*jshint curly:false */
 		if (!Backbone.History.started) return false;
 		if (!options || options === true) options = { trigger: !!options };
 
-		var url = this.root + (fragment = this.getFragment(fragment || ''));
+		var url = this.root + (fragment = this.getFragment(fragment || '')),
+			hashMatch = fragment.match(hashStripper),
+			hash = hashMatch ? hashMatch[0] : '',
+			strippedFragment = fragment.replace(hashStripper, ''),
+			fragmentChanged = true;
 
-		// Removed from the upstream impl:
-		// Strip the fragment of the query and hash for matching.
-		// fragment = fragment.replace(pathStripper, '');
+		// Modified from the upstream impl:
+		// Strip the fragment of the hash for matching.
+		fragment = fragment.replace(hashStripper, '');
 
-		if (this.fragment === fragment) return;
-		this.fragment = fragment;
+		if (this.fragment === fragment) {
+			fragmentChanged = false;
+		} else {
+			this.fragment = fragment;
+		}
 
 		// Don't include a trailing slash on the root.
 		if (fragment === '' && url !== '/') url = url.slice(0, -1);
 
 		// If pushState is available, we use it to set the fragment as a real URL.
 		if (this._hasPushState) {
-			this.history[options.replace ? 'replaceState' : 'pushState']({}, document.title, url);
+			this.history[options.replace ? 'replaceState' : 'pushState']({}, document.title, url + hash);
 
 			// If hash changes haven't been explicitly disabled, update the hash
 			// fragment to store history.
 		} else if (this._wantsHashChange) {
-			this._updateHash(this.location, fragment, options.replace);
+			this._updateHash(this.location, fragment + hash, options.replace);
 			if (this.iframe && (fragment !== this.getFragment(this.getHash(this.iframe)))) {
 				// Opening and closing the iframe tricks IE7 and earlier to push a
 				// history entry on hash-tag change.  When replace is true, we don't
 				// want this.
 				if (!options.replace) this.iframe.document.open().close();
-				this._updateHash(this.iframe.location, fragment, options.replace);
+				this._updateHash(this.iframe.location, fragment + hash, options.replace);
 			}
 
 			// If you've told us that you explicitly don't want fallback hashchange-
 			// based history, then `navigate` becomes a page refresh.
 		} else {
-			return this.location.assign(url);
+			if (fragmentChanged) {
+				return this.location.assign(url + hash);				
+			} else {
+				return this.location.assign(hash);
+			}
 		}
-		if (options.trigger) return this.loadUrl(fragment);
+		if (options.trigger && fragmentChanged) return this.loadUrl(fragment);
 	};
 
 }));
