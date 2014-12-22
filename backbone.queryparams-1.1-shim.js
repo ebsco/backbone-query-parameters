@@ -20,26 +20,36 @@
 	}
 }(this, function (_, Backbone) {
 
+	var hashStripper = /#.*/;
+
 	Backbone.History.prototype.navigate = function (fragment, options) {
 		/*jshint curly:false */
 		if (!Backbone.History.started) return false;
 		if (!options || options === true) options = { trigger: !!options };
 
-		var url = this.root + (fragment = this.getFragment(fragment || ''));
+		var hashMatch = fragment.match(hashStripper),
+			hash = hashMatch ? hashMatch[0] : '',
+			url = this.root + (fragment = this.getFragment(fragment || '')),
+			fragmentChanged = true;
 
-		// Removed from the upstream impl:
-		// Strip the fragment of the query and hash for matching.
-		// fragment = fragment.replace(pathStripper, '');
+		// Modified from the upstream impl:
+		// Strip the fragment of the hash for matching.
+		fragment = fragment.replace(hashStripper, '');
 
-		if (this.fragment === fragment) return;
-		this.fragment = fragment;
+		if (this.fragment === fragment) {
+			fragmentChanged = false;
+		} else {
+			this.fragment = fragment;
+		}
 
 		// Don't include a trailing slash on the root.
 		if (fragment === '' && url !== '/') url = url.slice(0, -1);
+		url = url + hash;
+		fragment = fragment + hash;
 
 		// If pushState is available, we use it to set the fragment as a real URL.
 		if (this._hasPushState) {
-			this.history[options.replace ? 'replaceState' : 'pushState']({}, document.title, url);
+			if (fragmentChanged) this.history[options.replace ? 'replaceState' : 'pushState']({}, document.title, url);
 
 			// If hash changes haven't been explicitly disabled, update the hash
 			// fragment to store history.
@@ -58,7 +68,7 @@
 		} else {
 			return this.location.assign(url);
 		}
-		if (options.trigger) return this.loadUrl(fragment);
+		if (options.trigger && fragmentChanged) return this.loadUrl(fragment);
 	};
 
 }));

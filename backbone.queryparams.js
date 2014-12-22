@@ -19,6 +19,7 @@ var queryStringParam = /^\?(.*)/,
     splatParam    = /\*\w+/g,
     escapeRegExp  = /[\-{}\[\]+?.,\\\^$|#\s]/g,
     fragmentStrip = /^([^\?]*)/,
+    hashStripper = /#.*/g,
     namesPattern = /[\:\*]([^\:\?\/]+)/g,
     routeStripper = /^[#\/]|\s+$/g,
     trailingSlash = /\/$/;
@@ -42,7 +43,7 @@ _.extend(Backbone.History.prototype, {
         fragment = this.getHash();
       }
     }
-    return fragment.replace(routeStripper, '');
+    return fragment.replace(routeStripper, '').replace(hashStripper, '');
   },
 
   // this will not perform custom query param serialization specific to the router
